@@ -1,0 +1,46 @@
+{
+    "users": [
+        {
+            "id": 1,
+            "name": "Alice",
+            "email": "alice@example.com",
+            "isActive": true
+        },
+        {
+            "id": 2,
+            "name": "Bob",
+            "email": "bob@example.com",
+            "isActive": false
+        }
+    ],
+    "products": [
+        {
+            "id": 101,
+            "name": "Laptop",
+            "price": 999.99,
+            "inStock": true
+        },
+        {
+            "id": 102,
+            "name": "Smartphone",
+            "price": 499.99,
+            "inStock": false
+        }
+    ],
+    "orders": [
+        {
+            "orderId": 1001,
+            "userId": 1,
+            "productId": 101,
+            "quantity": 1,
+            "totalPrice": 999.99
+        },
+        {
+            "orderId": 1002,
+            "userId": 2,
+            "productId": 102,
+            "quantity": 2,
+            "totalPrice": 999.98
+        }
+    ]
+}
