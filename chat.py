@@ -35,10 +35,7 @@ def format_structure_common(structure, with_description=False):
             if with_description:
                 if 0 <= index < len(analyses):
                     analysis = analyses[index]
-                    if analysis == "NOT_ANALYZED":
-                        lines.append(f"■ {f}")
-                        lines.append(f" - ※解析対象外\n")
-                    else:
+                    if isinstance(analysis, dict):
                         file_type = analysis.get('file_type', '---')
                         description = analysis.get('description', '---')
                         references = analysis.get('references', [])
@@ -54,6 +51,14 @@ def format_structure_common(structure, with_description=False):
                         lines.append(f"\n# ファイルパス")
                         lines.append(f"  - {root}/{f}")
                         lines.append("\n")
+                    elif analysis == "NOT_ANALYZED":
+                        lines.append(f"■ {f}")
+                        lines.append(f" - ※解析対象外\n")
+                    elif analysis == "FILE_READ_ERROR":
+                        lines.append(f"■ {f}")
+                        lines.append(f" - ※ファイル読み取りエラー\n")
+                    else:
+                        raise ValueError(f"Unexpected analysis result: {analysis}")
             else:
                 lines.append(f"{indent}    {f}")
     return '\n'.join(lines)

@@ -114,13 +114,18 @@ def format_structure(structure):
             lines.append(f"{indent}    {f}")
             if index < len(analyses) and analyses[index]:
                 analysis = analyses[index]
-                if analysis == "NOT_ANALYZED":
-                    lines.append(f"{indent}    ※解析対象外\n")
-                else:
+                if isinstance(analysis, dict):
                     file_type = analysis.get('file_type', '---')
                     description = analysis.get('description', '---')
                     lines.append(f"{indent}    {file_type}")
                     lines.append(f"{indent}    {description}\n")
+                elif analysis == "NOT_ANALYZED":
+                    lines.append(f"{indent}    ※解析対象外\n")
+                elif analysis == "FILE_READ_ERROR":
+                    lines.append(f"{indent}    ※ファイル読み取りエラー\n")
+                else:
+                    raise ValueError(f"Unexpected analysis result: {analysis}")
+
     return '\n'.join(lines)
 
 def write_stats_to_file(stats, filename):
