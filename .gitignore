@@ -4,4 +4,4 @@ __pycache__
 report.html
 stats_final.json
 stats_intermediate.json
-
+*.rd
