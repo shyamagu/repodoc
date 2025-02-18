@@ -19,7 +19,7 @@ html_content = f"""
         th, td {{ border: 1px solid #ccc; padding: 8px; text-align: left; }}
         th {{ background-color: #f4f4f4; }}
         .not-analyzed {{ color: #999; }}
-        .direcotry {{ background-color: #a4a4ff; }}
+        .directory {{ background-color: #a4a4ff; }}
         .file-name {{ width: 15%; font-size: 1.2em; }}
         .file-type {{ width: 15%; }}
         .description {{ width: 50%; font-size:0.9em;}}
@@ -38,7 +38,7 @@ html_content = f"""
 for folder in data['structure']:
     if folder[2]:  # ファイルが存在するフォルダのみ表示
         html_content += f"""
-        <h2 class="direcotry" >ディレクトリ: {folder[0]}</h2>
+        <h2 class="directory" >ディレクトリ: {folder[0]}</h2>
         <table>
             <thead>
                 <tr>
@@ -52,7 +52,7 @@ for folder in data['structure']:
             <tbody>
         """
         for file, analysis in zip(folder[2], folder[3]):
-            if analysis != "NOT_ANALYZED":
+            if isinstance(analysis, dict):
                 description_html = markdown2.markdown(analysis['description'])
                 html_content += f"""
                 <tr>
