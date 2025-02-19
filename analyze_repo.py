@@ -5,6 +5,11 @@ import time
 from pydantic import BaseModel
 from openai_utils import get_parsed_completion, get_token_count, estimate_cost_for_gpt4o_0806
 
+STATS_FINAL_FILENAME = 'stats_final.json'
+STATS_INTERMEDIATE_FILENAME = 'stats_intermediate.json'
+IGNORE_FILENAME = '.repodocignore'
+REPODOC_FOLDER = '.repodoc'
+
 class FileContent(BaseModel):
     type: str
     file_type: str
@@ -17,7 +22,7 @@ def read_repodocignore_setting(folder_path):
     Reads the .repodocignore file in the specified folder and returns a list of patterns to ignore.
     """
 
-    repodocignore_path = os.path.join(folder_path, '.repodocignore')
+    repodocignore_path = os.path.join(folder_path, REPODOC_FOLDER, IGNORE_FILENAME)
     patterns = []
     if os.path.exists(repodocignore_path):
         with open(repodocignore_path, 'r') as file:
@@ -133,6 +138,7 @@ def write_stats_to_file(stats, filename):
     Writes the statistics to a JSON file.
     """
 
+    os.makedirs(os.path.dirname(filename), exist_ok=True)
     with open(filename, 'w', encoding='utf-8') as file:
         json.dump(stats, file, indent=4, ensure_ascii=False)
 
@@ -307,23 +313,34 @@ The entry points when this file is called (such as public methods in the case of
     return stats
     
 if __name__ == "__main__":
-    choice = input("""\
+    print("""\
 *****************************************
 **            REPO DOC  v0.9           **
 *****************************************
+""")
+
+    folder_path = input("Enter the folder path to analyze: ")
+    folder_path = os.path.abspath(folder_path)  # Convert to absolute path
+
+    choice = input("""\
 Select an option:
     - Start a new analysis: (new)/(n)
     - Continue from an intermediate file: (inter)/(i)
     - Update the analysis with GPT *File update only: (update)/(u)
     - Confirm a final file: (final)/(f)
 >""").strip().lower()
-    stats_intermediate_filename = 'stats_intermediate.json'
-    stats_final_filename = 'stats_final.json'
+
+    # 中間および最終ファイルのパスを定義
+    stats_intermediate_filename = os.path.join(folder_path, REPODOC_FOLDER, STATS_INTERMEDIATE_FILENAME)
+    stats_final_filename = os.path.join(folder_path, REPODOC_FOLDER, STATS_FINAL_FILENAME)
 
     if choice in ['new', 'n']:
-        folder_path = input("Enter the folder path to analyze: ")
-        folder_path = os.path.abspath(folder_path)  # Convert to absolute path
         stats = analyze_folder(folder_path)
+
+        # 分析パスの最後のディレクトリ名に .rd 拡張子を付けたファイルに分析パスを保存する
+        analysis_path_filename = os.path.basename(folder_path) + '.rd'
+        with open(analysis_path_filename, 'w', encoding='utf-8') as f:
+            f.write(folder_path)
 
         # Format and display the structure
         structure_text = format_structure(stats['structure'])
@@ -354,9 +371,6 @@ Select an option:
     if choice in ['update', 'u']:
         if os.path.exists(stats_final_filename):
             stats = read_stats_from_file(stats_final_filename)
-
-            #folder_path = os.path.abspath(stats["folder_name"])
-            #new_stats = analyze_folder(folder_path)
 
             structure_text = format_structure(stats['structure'])
             print("====")

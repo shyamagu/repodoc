@@ -1,8 +1,30 @@
 import json
 import markdown2
+import sys
+import os
+import argparse
 
-# stats_final.jsonファイルをロード
-with open('stats_final.json', 'r', encoding='utf-8') as f:
+STATS_FINAL_FILENAME = 'stats_final.json'
+REPODOC_FOLDER = '.repodoc'
+
+# 引数パーサーを設定
+parser = argparse.ArgumentParser(description='Generate a repository analysis report.')
+parser.add_argument('analysis_path_file', nargs='?', help='File containing the analysis path')
+parser.add_argument('-o', '--output', help='Output file path for the report', default=None)
+args = parser.parse_args()
+
+# 指定されたファイルから解析パスを読み取るか、ユーザーに入力を促す
+if args.analysis_path_file:
+    with open(os.path.abspath(args.analysis_path_file), 'r', encoding='utf-8') as f:
+        analysis_path = f.read().strip()
+else:
+    analysis_path = input("Enter the analysis path: ").strip()
+    analysis_path = os.path.abspath(analysis_path)
+
+stats_final_filename = os.path.join(analysis_path, REPODOC_FOLDER, STATS_FINAL_FILENAME)
+
+# stats_final.jsonファイルを読み込む
+with open(stats_final_filename, 'r', encoding='utf-8') as f:
     data = json.load(f)
 
 # HTMLコンテンツを生成
@@ -80,6 +102,12 @@ html_content += """
 </html>
 """
 
+# 出力ファイルパスを決定
+if args.output:
+    output_html_filename = args.output
+else:
+    output_html_filename = os.path.join(analysis_path, 'repodoc-report.html')
+
 # HTMLファイルに書き出し
-with open("report.html", "w", encoding="utf-8") as f:
+with open(output_html_filename, "w", encoding="utf-8") as f:
     f.write(html_content)

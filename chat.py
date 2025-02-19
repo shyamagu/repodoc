@@ -1,9 +1,11 @@
 import json
 import os
+import sys
 from pydantic import BaseModel
 from openai_utils import get_parsed_completion, get_token_count, estimate_cost_for_gpt4o_0806
 
 STATS_FINAL_FILENAME = 'stats_final.json'
+REPODOC_FOLDER = '.repodoc'
 
 class CheckRequest(BaseModel):
     complex_level: int
@@ -86,8 +88,18 @@ def generate_additional_system_prompt(file_paths):
     return additional_system_prompt
 
 if __name__ == "__main__":
-    if os.path.exists(STATS_FINAL_FILENAME):
-        stats = read_stats_from_file(STATS_FINAL_FILENAME)
+    if len(sys.argv) == 2:
+        analysis_path_file = os.path.abspath(sys.argv[1])
+        with open(analysis_path_file, 'r', encoding='utf-8') as f:
+            analysis_path = f.read().strip()
+    else:
+        analysis_path = input("Enter the analysis path: ").strip()
+        analysis_path = os.path.abspath(analysis_path)
+
+    stats_final_filename = os.path.join(analysis_path, REPODOC_FOLDER, STATS_FINAL_FILENAME)
+
+    if os.path.exists(stats_final_filename):
+        stats = read_stats_from_file(stats_final_filename)
         structure_text = format_structure(stats['structure'])
         print("==== REPOSITORY STRUCTURE ====")
         print(structure_text)
