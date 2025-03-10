@@ -3,6 +3,7 @@ import markdown2
 import sys
 import os
 import argparse
+import html
 
 STATS_FINAL_FILENAME = 'stats_final.json'
 REPODOC_FOLDER = '.repodoc'
@@ -51,7 +52,7 @@ html_content = f"""
 </head>
 <body>
     <h1>リポジトリ解析レポート</h1>
-    <h2>フォルダ: {data['folder_name']}</h2>
+    <h2>フォルダ: {html.escape(data['folder_name'])}</h2>
     <p>ファイル数: {data['num_files']}</p>
     <p>ディレクトリ数: {data['num_dirs']}</p>
     <p>合計サイズ: {data['total_size']} bytes</p>
@@ -59,8 +60,9 @@ html_content = f"""
 
 for folder in data['structure']:
     if folder[2]:  # ファイルが存在するフォルダのみ表示
+        escaped_folder_name = html.escape(folder[0])
         html_content += f"""
-        <h2 class="directory" >ディレクトリ: {folder[0]}</h2>
+        <h2 class="directory">ディレクトリ: {escaped_folder_name}</h2>
         <table>
             <thead>
                 <tr>
@@ -74,21 +76,26 @@ for folder in data['structure']:
             <tbody>
         """
         for file, analysis in zip(folder[2], folder[3]):
+            escaped_file = html.escape(file)
             if isinstance(analysis, dict):
-                description_html = markdown2.markdown(analysis['description'])
+                escaped_desc = html.escape(analysis['description'])
+                description_html = markdown2.markdown(escaped_desc)
+                escaped_file_type = html.escape(analysis['file_type'])
+                references_str = ', '.join(html.escape(r) for r in analysis['references'])
+                entry_points_str = ', '.join(html.escape(e) for e in analysis['entry_points'])
                 html_content += f"""
                 <tr>
-                    <td class="file-name">{file}</td>
-                    <td class="file-type">{analysis['file_type']}</td>
+                    <td class="file-name">{escaped_file}</td>
+                    <td class="file-type">{escaped_file_type}</td>
                     <td class="description">{description_html}</td>
-                    <td class="references">{', '.join(analysis['references'])}</td>
-                    <td class="entry-points">{', '.join(analysis['entry_points'])}</td>
+                    <td class="references">{references_str}</td>
+                    <td class="entry-points">{entry_points_str}</td>
                 </tr>
                 """
             else:
                 html_content += f"""
                 <tr>
-                    <td class="file-name">{file}</td>
+                    <td class="file-name">{escaped_file}</td>
                     <td colspan="4" class="not-analyzed">解析されていません</td>
                 </tr>
                 """
