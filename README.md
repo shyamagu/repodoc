@@ -46,6 +46,7 @@
     AZURE_OPENAI_ENDPOINT=<YOUR_AZURE_OPENAI_ENDPOINT>
     AZURE_OPENAI_API_KEY=<YOUR_AZURE_OPENAI_API_KEY>
     MODEL_DEPLOYMENT_NAME=<YOUR_MODEL_DEPLOYMENT_NAME>
+    AZURE_OPENAI_API_VERSION=<API_VERSION>
     ```
 
 ## 使用方法
@@ -58,6 +59,11 @@
     ```
 
 2. プロンプトに従いフォルダパスを入力し、分析を開始します。分析パスは実行ディレクトリに `<フォルダ名>.rd` というファイル名で保存されます。
+
+### オプション引数
+
+- `--folder <フォルダパス>`: 分析対象のフォルダパスを指定します。指定しない場合は対話形式で入力を求められます。
+- `--mode <モード>`: 実行モードを指定します。`new`（新規分析・デフォルト）、`inter`（中間ファイルから再開）、`update`（ファイル更新のみGPT再分析）、`final`（最終ファイル確認）から選択できます。
 
 ### チャットボットとの対話
 

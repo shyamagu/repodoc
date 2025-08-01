@@ -2,6 +2,7 @@ import os
 import fnmatch
 import json
 import time
+import sys
 from pydantic import BaseModel
 from openai_utils import get_parsed_completion, get_token_count, estimate_cost_for_gpt4o_0806
 
@@ -150,7 +151,7 @@ def read_stats_from_file(filename):
     with open(filename, 'r', encoding='utf-8') as file:
         return json.load(file)
     
-def gpt_analyze(structure, structure_text):
+def gpt_analyze(structure, structure_text, interactive=True):
     """
     Analyzes the folder structure using GPT and updates the structure with the analysis results.
     """
@@ -195,6 +196,8 @@ def gpt_analyze(structure, structure_text):
                         print("Skip because this file has not been modified since the last analysis.")
                         choice = 'no'
                     elif flag_yesall:
+                        choice = 'yes'
+                    elif not interactive:
                         choice = 'yes'
                     else:
                         choice = input("Do you want to start a new GPT analysis or skip this file? (yes/no or yesall)(y/n/a): ").strip().lower()
@@ -295,8 +298,6 @@ The entry points when this file is called (such as public methods in the case of
                                 item[3].append("NOT_ANALYZED")
                                 item[4].append(last_modified_time)
 
-                    #print(stats['structure'])
-
             except Exception as e:
                 print(f"Could not read {file_path}: {e}")
                 for item in stats['structure']:
@@ -311,89 +312,104 @@ The entry points when this file is called (such as public methods in the case of
     print("*****************")
 
     return stats
-    
+
 if __name__ == "__main__":
+    # メイン処理開始
     print("""\
 *****************************************
 **            REPO DOC  v0.9           **
 *****************************************
 """)
 
-    folder_path = input("Enter the folder path to analyze: ")
-    folder_path = os.path.abspath(folder_path)  # Convert to absolute path
+    # オプション引数パース
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--folder', type=str, help='解析対象のフォルダパス')
+    parser.add_argument('--mode', type=str, default='new', help='new/inter/update/final など')
+    args = parser.parse_args()
 
-    choice = input("""\
+    if args.folder:
+        # 自動実行モード
+        folder_path = os.path.abspath(args.folder)
+        choice = args.mode.strip().lower() if args.mode else 'new'
+        interactive = False
+    else:
+        # 対話型モード
+        folder_path = input("Enter the folder path to analyze: ")
+        folder_path = os.path.abspath(folder_path)
+        choice = input("""\
 Select an option:
     - Start a new analysis: (new)/(n)
     - Continue from an intermediate file: (inter)/(i)
     - Update the analysis with GPT *File update only: (update)/(u)
     - Confirm a final file: (final)/(f)
 >""").strip().lower()
+        interactive = True
 
-    # 中間および最終ファイルのパスを定義
+    # 統計ファイル名の設定
     stats_intermediate_filename = os.path.join(folder_path, REPODOC_FOLDER, STATS_INTERMEDIATE_FILENAME)
     stats_final_filename = os.path.join(folder_path, REPODOC_FOLDER, STATS_FINAL_FILENAME)
 
     if choice in ['new', 'n']:
         stats = analyze_folder(folder_path)
-
         # 分析パスの最後のディレクトリ名に .rd 拡張子を付けたファイルに分析パスを保存する
         analysis_path_filename = os.path.basename(folder_path) + '.rd'
         with open(analysis_path_filename, 'w', encoding='utf-8') as f:
             f.write(folder_path)
-
-        # Format and display the structure
         structure_text = format_structure(stats['structure'])
         print("====")
         print(structure_text)
-
-        # Ask user for confirmation
-        user_input = input("Is the structure OK? (yes/no): ").strip().lower()
-        if user_input in ['yes', 'y']:
-            # Write stats to a file
+        if not interactive:
             write_stats_to_file(stats, stats_intermediate_filename)
             print(f"Stats have been written to {stats_intermediate_filename}")
         else:
-            print("Stats were not written to file.")
+            user_input = input("Is the structure OK? (yes/no): ").strip().lower()
+            if user_input in ['yes', 'y']:
+                write_stats_to_file(stats, stats_intermediate_filename)
+                print(f"Stats have been written to {stats_intermediate_filename}")
+            else:
+                print("Stats were not written to file.")
 
     if choice in ['new', 'n', 'inter', 'i']:
+        # 中間ファイルから読み込み、構造を表示し、GPT解析を実行
         if os.path.exists(stats_intermediate_filename):
             stats = read_stats_from_file(stats_intermediate_filename)
             structure_text = format_structure(stats['structure'])
             print("====")
             print(structure_text)
-            stats2 = gpt_analyze(stats['structure'], structure_text)
-
+            stats2 = gpt_analyze(stats['structure'], structure_text, interactive=interactive)
             write_stats_to_file(stats2, stats_final_filename)
         else:
             print(f"No saved stats file found at {stats_intermediate_filename}")
 
     if choice in ['update', 'u']:
+        # 最終ファイルから読み込み、GPT解析を再実行
         if os.path.exists(stats_final_filename):
             stats = read_stats_from_file(stats_final_filename)
-
             structure_text = format_structure(stats['structure'])
             print("====")
             print(structure_text)
-            stats2 = gpt_analyze(stats['structure'], structure_text)
-
+            stats2 = gpt_analyze(stats['structure'], structure_text, interactive=interactive)
             write_stats_to_file(stats2, stats_final_filename)
         else:
             print(f"No saved stats file found at {stats_final_filename}")
 
     if choice in ['new', 'n', 'inter', 'i', 'final', 'f', 'update', 'u']:
+        # 最終ファイルの内容を表示
         if os.path.exists(stats_final_filename):
             stats = read_stats_from_file(stats_final_filename)
-
-            user_check = input("Check the result? (yes/no)(y/n): ").strip().lower()
-            if user_check in ['yes', 'y']:
+            if not interactive:
                 structure_text = format_structure(stats['structure'])
                 print("========================")
                 print(structure_text)
-
+            else:
+                user_check = input("Check the result? (yes/no)(y/n): ").strip().lower()
+                if user_check in ['yes', 'y']:
+                    structure_text = format_structure(stats['structure'])
+                    print("========================")
+                    print(structure_text)
         else:
             print(f"No saved stats file found at {stats_final_filename}")
     else:
         print("Invalid choice. Please enter 'new' or 'inter' or 'final'.")
 
-    
